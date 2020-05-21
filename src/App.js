@@ -7,12 +7,7 @@ import FaceRecognition from './components/FaceRecognition/FaceRecognition';
 import SignIn from './components/SignIn/SignIn';
 import Register from './components/Register/Register';
 import Particles from 'react-particles-js';
-import Clarifai from 'clarifai';
 import './App.css';
-
-const app = new Clarifai.App({
-  apiKey: 'f3c9f2a742564b049aae6a78b4221b32'
- });
 
 const particlesSettings = {
   particles: {
@@ -25,24 +20,25 @@ const particlesSettings = {
     }
   }
 };
+const initialState = {
+  input:'',
+  urlImage:'',
+  box: {},
+  route: 'signin',
+  isSignedIn: false,
+  user:{
+    id: '',
+    name: '',
+    email: '',
+    entries: 0,
+    joined: ''
+  }
+}
 
 class App extends Component {
   constructor() {
     super();
-    this.state = {
-      input:'',
-      urlImage:'',
-      box: {},
-      route: 'signin',
-      isSignedIn: false,
-      user:{
-        id: '',
-        name: '',
-        email: '',
-        entries: 0,
-        joined: ''
-      }
-    }
+    this.state = initialState;
   }
 
   onInputChange = (event) => {
@@ -51,7 +47,7 @@ class App extends Component {
 
   onRouteChange =  (route) => {
     if (route === 'signout') {
-      this.setState({isSignedIn:false});
+      this.setState(initialState);
     } else if (route === 'home') {
       this.setState({isSignedIn:true});
     }
@@ -89,14 +85,17 @@ class App extends Component {
   onButtonSubmit = () => {
     console.log('click');
     this.setState({urlImage: this.state.input})
-    app.models
-    .predict(
-      Clarifai.FACE_DETECT_MODEL,
-      this.state.input
-    )
+    fetch('https://shrouded-wildwood-37460.herokuapp.com/imageurl',{
+      method: 'post',
+      headers: {'Content-Type':'application/json'},
+      body:JSON.stringify({
+          input: this.state.input
+      })
+    })
+    .then(response => response.json())
     .then( (response) => {
       if(response) {
-        fetch('http://localhost:3000/image',{
+        fetch('https://shrouded-wildwood-37460.herokuapp.com/image',{
           method: 'put',
           headers: {'Content-Type':'application/json'},
           body:JSON.stringify({
@@ -106,6 +105,7 @@ class App extends Component {
         .then(count=>{
           this.setState(Object.assign(this.state.user, {entries:count}))
         })
+        .catch(response => response.json())
       }
       this.displayFaceBox(this.calculateFaceLocation(response))
     })
